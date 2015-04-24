@@ -16,6 +16,9 @@ xcuserdata
 # virtualenv
 venv/*
 
+#other development junk
+packages/*
+
 # svn & cvs
 .svn
 CVS
