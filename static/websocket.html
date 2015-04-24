@@ -1,16 +1,31 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-  <script type="text/javascript">
-    var ws = new WebSocket("ws://localhost:5000/websocket");
-    ws.onopen = function() {
-        ws.send("Hello, world");
-    };
-    ws.onmessage = function (evt) {
-        alert(evt.data);
-    };
-  </script>
+	<script src="jquery.js"></script>
+  <script src="monitor.js"></script>
 </head>
 <body>
+	<ul>
+		<li class="monitor" data-pv="mgibbsHost:ai1">
+			
+		</li>
+		<li class="monitor" data-pv="mgibbsHost:ai2">
+			
+		</li>
+		<li class="monitor" data-pv="mgibbsHost:ai3">
+			
+		</li>
+		<li class="monitor" data-pv="mgibbsHost:aiExample">
+			
+		</li>
+		<li class="monitor" data-pv="mgibbsHost:aiExample1">
+			
+		</li>
+		<li class="monitor" data-pv="mgibbsHost:aiExample2">
+			
+		</li>
+		<li class="monitor" data-pv="mgibbsHost:aiExample3">
+			
+		</li>
 </body>
 </html>

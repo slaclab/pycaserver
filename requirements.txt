@@ -1,5 +1,7 @@
 bottle
 gevent
+wsaccel
+ujson
 gevent-websocket
 numpy
 pyepics
