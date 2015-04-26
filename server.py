@@ -24,6 +24,8 @@ class PycaServerApplication(WebSocketApplication):
 		if message in self.pvs:
 			self.pvs[message].connections.add(current_client)
 			print("Added a connection to %r.  Total connections: %r" % (message, len(self.pvs[message].connections)))
+			#Manually send the latest value of the PV to a new connection.  Important for PVs that update very infrequently.
+			self.monitor_update_callback(pvname=message, value=self.pvs[message].value, units=self.pvs[message].units, timestamp=self.pvs[message].timestamp, count=self.pvs[message].count)
 		else:
 			self.pvs[message] = epics.PV(message, callback=self.monitor_update_callback, connection_callback=self.monitor_connection_callback)
 			self.pvs[message].connections = set()
