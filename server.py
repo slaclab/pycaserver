@@ -5,55 +5,62 @@ from bottle import route, run, request, abort, Bottle ,static_file
 import numpy, epics
 from gevent import monkey; monkey.patch_all()
 from time import sleep
-from gevent.pywsgi import WSGIServer
-from geventwebsocket import WebSocketError
-from geventwebsocket.handler import WebSocketHandler
+from geventwebsocket import WebSocketServer, WebSocketApplication, Resource
 
 app = Bottle()
 
-@app.route('/monitor')
-def handle_monitor():
-	wsock = request.environ.get('wsgi.websocket')
-	if not wsock:
-		abort(400, 'Expected WebSocket request.')
-	def monitor_update_callback(pvname=None, value=None, units=None, timestamp=None, **kw):
+class PycaServerApplication(WebSocketApplication):
+	#def __init__(self):
+	#	self.pvs = {}
+	#	super(PycaServerApplication, self).__init__()
+	pvs = {}
+	def on_open(self):
+		print("Connection opened.")
+	
+	def on_message(self, message):
+		if message is None:
+			return
+			
+		current_client = self.ws.handler.active_client
+		current_client.pv = message
+		
+		if message in self.pvs:
+			self.pvs[message].connections.add(current_client)
+			print("Added a connection to %r.  Total connections: %r" % (message, len(self.pvs[message].connections)))
+		else:
+			self.pvs[message] = epics.PV(message, callback=self.monitor_update_callback, connection_callback=self.monitor_connection_callback)
+			self.pvs[message].connections = set()
+			self.pvs[message].connections.add(current_client)
+			print("New connection established to %r" % message)
+		
+	def monitor_update_callback(self, pvname=None, value=None, units=None, timestamp=None, **kw):
 		response = {"msg_type": "monitor", "pvname": pvname, "value": value, "count": kw['count'], "timestamp": timestamp }
 		if units:
 			response['units'] = units
-		try:
-			wsock.send(ujson.dumps(response))
-		except WebSocketError, ex:
-			print("Oh my goodness an error while sending.")
-			print("{0}: {1}".format(ex.__class__.__name__, ex))
-			print("Closing dead connection.")
-			wsock.close()
-	
-	def monitor_connection_callback(pvname=None, conn=None, **kw):
-		response = { "msg_type": "connection", "pvname": pvname, "conn": conn }
-		try:
-			wsock.send(ujson.dumps(response))
-		except WebSocketError, ex:
-			print("Oh my goodness an error while (dis)connecting.")
-			print("{0}: {1}".format(ex.__class__.__name__, ex))
+		for subscriber in self.pvs[pvname].connections:
+			subscriber.ws.send(ujson.dumps(response))
 		
-	try:
-		while True:
-				message = wsock.receive()
-				pv = epics.PV(message, callback=monitor_update_callback, connection_callback=monitor_connection_callback)
-		wsock.close()
-	except WebSocketError, ex:
-		print("Oh my goodness an error.")
-		print("{0}: {1}".format(ex.__class__.__name__, ex))
-		wsock.close()
+	def monitor_connection_callback(self, pvname=None, conn=None, **kw):
+		response = { "msg_type": "connection", "pvname": pvname, "conn": conn }
+		for subscriber in self.pvs[pvname].connections:
+			subscriber.ws.send(ujson.dumps(response))
+		
+	def on_close(self, reason):
+		current_client = self.ws.handler.active_client
+		self.pvs[current_client.pv].connections.remove(current_client)
+		print("Removed a connection to %r.  Total connections: %r" % (current_client.pv, len(self.pvs[current_client.pv].connections)))
+		if len(self.pvs[current_client.pv].connections) < 1:
+			self.pvs[current_client.pv].disconnect()
+			del self.pvs[current_client.pv]
+			print("PV disconnected.")
+		print("Connection closed.")
 
 @app.route('/<filename:path>')
 def send_html(filename):
-    return static_file(filename, root='./static', mimetype='text/html')
+    return static_file(filename, root='./static')
 
 host = "127.0.0.1"
 port = 5000
-
-server = WSGIServer((host, port), app,
-                    handler_class=WebSocketHandler)
-print "access @ http://%s:%s/websocket.html" % (host,port)
-server.serve_forever()
+server = WebSocketServer((host, port), Resource({'^/monitor': PycaServerApplication, '^.*': app})).serve_forever()
+#print "access @ http://%s:%s/websocket.html" % (host,port)
+#server.serve_forever()
