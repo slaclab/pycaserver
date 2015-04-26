@@ -10,9 +10,6 @@ from geventwebsocket import WebSocketServer, WebSocketApplication, Resource
 app = Bottle()
 
 class PycaServerApplication(WebSocketApplication):
-	#def __init__(self):
-	#	self.pvs = {}
-	#	super(PycaServerApplication, self).__init__()
 	pvs = {}
 	def on_open(self):
 		print("Connection opened.")
@@ -62,5 +59,3 @@ def send_html(filename):
 host = "127.0.0.1"
 port = 5000
 server = WebSocketServer((host, port), Resource({'^/monitor': PycaServerApplication, '^.*': app})).serve_forever()
-#print "access @ http://%s:%s/websocket.html" % (host,port)
-#server.serve_forever()
