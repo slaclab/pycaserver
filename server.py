@@ -33,7 +33,7 @@ class PycaServerApplication(WebSocketApplication):
 			print("New connection established to %r" % message)
 		
 	def monitor_update_callback(self, pvname=None, value=None, units=None, timestamp=None, **kw):
-		response = {"msg_type": "monitor", "pvname": pvname, "value": value, "count": kw['count'], "timestamp": timestamp }
+		response = {"msg_type": "monitor", "pvname": pvname, "value": value, "count": kw['count'], "timestamp": timestamp, "units": units }
 		if units:
 			response['units'] = units
 		for subscriber in self.pvs[pvname].connections:
