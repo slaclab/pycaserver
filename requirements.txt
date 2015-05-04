@@ -5,3 +5,4 @@ ujson
 gevent-websocket
 numpy
 pyepics
+gunicorn
