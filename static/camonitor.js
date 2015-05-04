@@ -2,7 +2,7 @@ $(window).load(function() {
   $(".monitor").each(function(){
     var elem = this
     var pv = $(this).data("pv");
-    var ws = new WebSocket("ws://localhost:5000/monitor");
+    var ws = new WebSocket("ws://localhost:8888/monitor");
     ws.onopen = function() {
       ws.send(pv);
     };
