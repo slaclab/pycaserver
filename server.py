@@ -4,7 +4,6 @@ import wsaccel, ujson
 from bottle import route, run, request, abort, Bottle ,static_file
 import numpy, epics
 from gevent import monkey; monkey.patch_all()
-from time import sleep
 from geventwebsocket import WebSocketServer, WebSocketApplication, Resource, WebSocketError
 
 app = Bottle()
@@ -21,8 +20,6 @@ class PycaServerApplication(WebSocketApplication):
 			return
 			
 		current_client = self.ws.handler.active_client
-		#if not hasattr(current_client, 'monitors'):
-		#	current_client.monitors = set()
 		current_client.monitors.add(message)
 		
 		if message in self.pvs:
@@ -65,11 +62,14 @@ class PycaServerApplication(WebSocketApplication):
 				print("PV disconnected.")
 		print("Connection closed.")
 		
-
 @app.route('/<filename:path>')
 def send_html(filename):
     return static_file(filename, root='./static')
 
-host = "127.0.0.1"
-port = 5000
-server = WebSocketServer((host, port), Resource({'^/monitor': PycaServerApplication, '^.*': app})).serve_forever()
+def start():
+	host = "127.0.0.1"
+	port = 8888
+	server = WebSocketServer((host, port), Resource({'^/monitor$': PycaServerApplication, '^/*': app})).serve_forever()
+	
+if __name__ == '__main__':
+	start()
