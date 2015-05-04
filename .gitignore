@@ -16,6 +16,9 @@ xcuserdata
 # virtualenv
 venv/*
 
+# .pyc files
+*.pyc
+
 #other development junk
 packages/*
 
