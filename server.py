@@ -19,6 +19,7 @@ app = Bottle()
 
 class PycaServerApplication(WebSocketApplication):
 	pvs = {}
+	units = {}
 	def on_open(self):
 		current_client = self.ws.handler.active_client
 		logger.debug("Connection opened.");
@@ -46,6 +47,10 @@ class PycaServerApplication(WebSocketApplication):
 		response = { "msg_type": "monitor", "pvname": pvname, "value": value, "count": kw['count'], "timestamp": timestamp }
 		if units:
 			response['units'] = units
+			self.units[pvname] = units
+		else:
+			if pvname in self.units:
+				response['units'] = self.units[pvname]
 		for subscriber in self.pvs[pvname].connections:
 			try:
 				subscriber.ws.send(ujson.dumps(response))
