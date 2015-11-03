@@ -25,7 +25,7 @@ class PycaServerApplication(WebSocketApplication):
 	units = {}
 	def on_open(self):
 		current_client = self.ws.handler.active_client
-		logger.debug("Connection opened.");
+		logger.debug("Client connection opened.");
 		current_client.monitors = set()
 		
 	def on_message(self, message):
