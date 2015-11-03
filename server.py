@@ -10,10 +10,13 @@ import logging
 logger = logging.getLogger("pycaserverLogger")
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-#handler = logging.FileHandler("/var/log/pycaserver/pycaserver.log")
+filehandler = logging.FileHandler("/var/log/pycaserver/pycaserver.log")
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
+filehandler.setFormatter(formatter)
 logger.addHandler(handler)
+logger.addHandler(filehandler)
+logger.setLevel(logging.DEBUG)
 
 app = Bottle()
 
