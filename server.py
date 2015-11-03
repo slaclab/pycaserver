@@ -28,24 +28,47 @@ class PycaServerApplication(WebSocketApplication):
 		logger.debug("Client connection opened.");
 		current_client.monitors = set()
 		
-	def on_message(self, message):
-		if message is None:
+	def on_message(self, raw_message):
+		if raw_message is None:
 			return
-			
-		current_client = self.ws.handler.active_client
-		current_client.monitors.add(message)
-		
-		if message in self.pvs:
-			self.pvs[message].connections.add(current_client)
-			logger.debug("Added a connection to %r from %r.  Total connections: %r" % (message, current_client.address, len(self.pvs[message].connections)))
-			#Manually send the latest value of the PV to a new connection.  Important for PVs that update very infrequently.
-			self.monitor_update_callback(pvname=message, value=self.pvs[message].value, units=self.pvs[message].units, timestamp=self.pvs[message].timestamp, count=self.pvs[message].count)
+    
+    current_client = self.ws.handler.active_client
+    try:
+      message_data = ujson.loads(raw_message)
+    except ValueError:
+      #Fallback to old protocol, where we assume the raw message string is a PV to connect to.
+      self.establish_pv_connection(raw_message, current_client)
+      return
+      
+    if 'action' in message_data:  
+      if message_data['action'] == "connect":
+        self.establish_pv_connection(message_data.pv, current_client)
+      elif message_data['action'] == "disconnect":
+        self.close_pv_connection(message_data.pv, current_client)
+    
+  def establish_pv_connection(self, pvname, client):
+		client.monitors.add(pvname)
+		if pvname in self.pvs:
+			self.pvs[pvname].connections.add(client)
+			logger.debug("Added a connection to {0} from {1}.  Total connections: {2}".format(pvname, client.address, len(self.pvs[pvname].connections)))
+			#Manually send the connection established message, since the PV callback is long-since fired.
+      self.monitor_connection_callback(pvname=pvname, conn=True)
+      #Manually send the latest value of the PV to a new connection.  Important for PVs that update very infrequently.
+			self.monitor_update_callback(pvname=pvname, value=self.pvs[pvname].value, units=self.pvs[pvname].units, timestamp=self.pvs[pvname].timestamp, count=self.pvs[pvname].count)
 		else:
-			self.pvs[message] = epics.PV(message, form='ctrl', callback=self.monitor_update_callback, connection_callback=self.monitor_connection_callback)
-			self.pvs[message].connections = set()
-			self.pvs[message].connections.add(current_client)
-			logger.debug("New connection established to %r" % message)
-		
+			self.pvs[pvname] = epics.PV(pvname, form='ctrl', callback=self.monitor_update_callback, connection_callback=self.monitor_connection_callback)
+			self.pvs[pvname].connections = set()
+			self.pvs[pvname].connections.add(client)
+			logger.debug("New connection established to {0}".format(pvname))
+  
+  def close_pv_connection(self, pvname, client):
+    self.pvs[pvname].connections.remove(client)
+		logger.debug("Removed a connection to {0}.  Total connections: {1}".format(pvname, len(self.pvs[pvname].connections)))
+		if len(self.pvs[pvname].connections) < 1:
+			self.pvs[pvname].disconnect()
+			del self.pvs[pvname]
+			logger.debug("PV {0} disconnected.".format(pvname))
+  	
 	def monitor_update_callback(self, pvname=None, value=None, units=None, timestamp=None, **kw):
 		response = { "msg_type": "monitor", "pvname": pvname, "value": value, "count": kw['count'], "timestamp": timestamp }
 		if units:
@@ -71,13 +94,8 @@ class PycaServerApplication(WebSocketApplication):
 	def on_close(self, reason):
 		current_client = self.ws.handler.active_client
 		for monitored_pv in current_client.monitors:
-			self.pvs[monitored_pv].connections.remove(current_client)
-			logger.debug("Removed a connection to %r.  Total connections: %r" % (monitored_pv, len(self.pvs[monitored_pv].connections)))
-			if len(self.pvs[monitored_pv].connections) < 1:
-				self.pvs[monitored_pv].disconnect()
-				del self.pvs[monitored_pv]
-				logger.debug("PV disconnected.")
-		logger.debug("Connection closed.")
+			self.close_pv_connection(monitored_pv, current_client)
+		logger.debug("Connection to client closed.")
 		
 @app.route('/<filename:path>')
 def send_html(filename):
