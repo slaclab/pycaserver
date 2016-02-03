@@ -6,11 +6,12 @@ import numpy, epics
 from gevent import monkey; monkey.patch_all()
 from geventwebsocket import WebSocketServer, WebSocketApplication, Resource, WebSocketError
 import logging
+from collections import OrderedDict
 
 logger = logging.getLogger("pycaserverLogger")
 logger.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-filehandler = logging.FileHandler("/var/log/pycaserver/pycaserver.log")
+filehandler = logging.FileHandler("pycaserver.log")
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 filehandler.setFormatter(formatter)
