@@ -104,7 +104,7 @@ def send_html(filename):
     return static_file(filename, root='./static')
 
 #wsgi_app is the callable to use for WSGI servers.
-wsgi_app = Resource({'^/monitor$': PycaServerApplication, '^/*': app})
+wsgi_app = Resource(OrderedDict([('^/monitor$', PycaServerApplication), ('^/*', app)]))
 
 #start() starts the development server.
 def start():
