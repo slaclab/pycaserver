@@ -25,4 +25,4 @@ If you want to stop listening to a PV, send the server a disconnect message:
 socket.send({"action":"disconnect", "pv":"myPVName"});
 ```
 
-That is pretty much it.  For more details, see the [wiki](https://github.com/mattgibbs/pycaserver/wiki).  Have fun!
+That is pretty much it.  For more details, see the [wiki](https://github.com/slaclab/pycaserver/wiki).  Have fun!
