@@ -46,7 +46,13 @@ class PycaServerApplication(WebSocketApplication):
         self.establish_pv_connection(message_data["pv"], current_client)
       elif message_data['action'] == "disconnect":
         self.close_pv_connection(message_data["pv"], current_client)
-    
+  
+  def on_close(self, reason):
+    current_client = self.ws.handler.active_client
+    for monitored_pv in current_client.monitors:
+      self.close_pv_connection(monitored_pv, current_client)
+    logger.debug("Connection to client closed.")
+      
   def establish_pv_connection(self, pvname, client):
     client.monitors.add(pvname)
     if pvname in self.pvs:
@@ -92,12 +98,6 @@ class PycaServerApplication(WebSocketApplication):
         subscriber.ws.send(ujson.dumps(response))
       except WebSocketError:
         logger.error("Tried to send message to disconnected socket.")
-    
-  def on_close(self, reason):
-    current_client = self.ws.handler.active_client
-    for monitored_pv in current_client.monitors:
-      self.close_pv_connection(monitored_pv, current_client)
-    logger.debug("Connection to client closed.")
     
 @app.route('/<filename:path>')
 def send_html(filename):
