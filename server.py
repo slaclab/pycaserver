@@ -85,7 +85,7 @@ class PycaServerApplication(WebSocketApplication):
     else:
       if pvname in self.units:
         response['units'] = self.units[pvname]
-    if isinstance(value, np.ndarray):
+    if isinstance(value, numpy.ndarray):
       response['value'] = list(value)
     for subscriber in self.pvs[pvname].connections:
       try:
