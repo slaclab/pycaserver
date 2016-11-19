@@ -86,7 +86,7 @@ class PycaServerApplication(WebSocketApplication):
       if pvname in self.units:
         response['units'] = self.units[pvname]
     if isinstance(value, numpy.ndarray):
-      response['value'] = list(value)
+      response['value'] = value.tolist()
     for subscriber in self.pvs[pvname].connections:
       try:
         subscriber.ws.send(ujson.dumps(response))
